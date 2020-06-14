@@ -26,6 +26,23 @@ sumDigits n
 --Exercise 4
 validate :: Integer -> Bool
 validate n 
-    | n < 0                                                     = False
     | (sumDigits (doubleEveryOther (toDigits n))) `rem` 10 == 0 = True
-    | otherwise                                                 = False  
+    | otherwise                                                 = False
+
+--Exercise 5 The Towers of Hanoi
+type Peg = String
+type Move = (Peg, Peg)
+hanoiOfOne :: Integer -> Peg -> Peg -> Peg -> [Move]
+hanoiOfOne n src goal temp
+    | n <= 0      = []
+    | n == 1      = [(src, goal)]
+    | otherwise   = hanoiOfOne (n - 1) src temp goal ++ hanoiOfOne 1 src goal temp ++ hanoiOfOne (n - 1) temp goal src
+
+hanoiOfTow :: Integer -> Peg -> Peg -> Peg -> [Move]
+hanoiOfTow n start middle end
+    | n <= 0      = []
+    | n == 1      = [(start, end)]
+    | otherwise   = hanoiOfTow (n - 1) start end middle ++ hanoiOfTow 1 start middle end ++ hanoiOfTow (n - 1) middle start end
+
+hanoiFour :: Integer -> Peg -> Peg -> Peg -> Peg -> [Move]
+hanoiFour n start
