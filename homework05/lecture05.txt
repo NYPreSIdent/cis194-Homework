@@ -1,0 +1,193 @@
+More polymorphism and type classes
+
+Haskell's particular brand of polymorphism is known as parametric polymorphis.
+This means that polymorphic function can work well with any input types.
+
+Parametricity
+1. a -> a -> a
+a is type which can stands for any type.
+
+f :: a -> a -> a
+f x y = x && y
+
+This function causes error, the syntax is valid but it does not type check.
+So the reason this doesn't work is that the caller of a polymorphic function gets to choose the type. Here we, the implementors, have tried to choose a specific type (namely Bool), but we may be given String, or Int (Which can not be compared using &&) or even user defined types, which can't possibly know about in advance.
+a -> a -> a
+is a promise that a function with this type will work no matter what type the caller chooses.
+
+Another implementation we could imagine is something like this:
+f a1 a2 = case (typeOf a1) of
+    Int  -> a1 + a2
+    Bool -> a1 && a2
+    _    -> a1
+
+f can behave in some specific ways for certain types.
+Java:
+class AdHoc {
+	
+	public static Object f(Object a1, Object a2) {
+		if (a1 instanceof Integer && a2 instanceOf Integer) {
+			return (Integer)a1 + (Integer)a2;
+		} else if (a1 instanceof Boolean && a2 instanceof Boolean) {
+			return (Boolean)a1 && (Boolean)s2;
+		} else {
+			return a1;
+		}
+	}
+}
+
+But Haskell doesn't have instanceof operator, it is not possible to ask what type something is and decide what to do based on the answer.
+One reason for this is that Haskell types are erased by the compiler after being checked: at runtime, there is no type information around to qurey.
+
+f :: a -> a -> a is parametric in the type a.
+Here, parametric is just a funcy term for "works uniformly for any type chosen by the caller"
+
+So, actually, there are only two functions coule have this type:
+f1 :: a -> a -> a
+f1 x y = x
+
+f2 :: a -> a -> a
+f1 x y = y
+
+f :: a -> a
+f x = x (identity function)
+
+f :: a -> b
+f x = can return another type.
+
+a -> b -> a
+f x y = x
+
+(b -> c) -> (a -> b) -> (a -> c)
+function composision.
+
+Two views on parametricity:
+As a implementor of polymorphic funcions, we may find some restrictions annoying.
+
+However, there is a dual point of view:
+As a user of polymorphic functions, parametricity corresponds not to restrictions but to guarantees.
+Parametricity is part of reason that just looking at the type of Haskell function can tell you so much about the function.
+
+sometimes it really is useful to be able to decide what to do based on types!
+:t (+)
+(+) :: Num a => a -> a -> a
+
+(==) :: Eq a => a -> a -> Bool
+(<)  :: Ord a => a -> a -> Bool
+show :: Show a => a -> String
+
+Num, Eq, Show are all type classes, and we say that (==), (<) and (+) are "type-class polymorphic".
+type class correspond to sets of types which have crtain operations defined for them, and type class polymorphic functions work only for types which are instances of the type calss in a question.
+
+class Eq a where
+    (==) :: a -> a -> Bool
+    (/=) :: a -> a -> Bool
+
+We can read as follows: Eq is declared to be a type class with a single parameter, a. Any type a which wants to be an instance of Eq must define two functions, (==) and (/=), with the indicated type signatures.
+for example:
+	make Int an instance of Eq we would have to define (==) :: Int -> Int -> Bool and (\=) :: Int -> Int -> Bool
+
+(==) :: Eq a => a -> a -> Bool
+the (Eq a) that comes before the => is a type class constraint.
+We can read this as saying that for any type a, as long as a is an instance of Eq, (==) can take two values of type a and return a Bool.
+
+So, if a normal polymorphic type is a promise that the function will work for whatever type the caller chooses, a type class polymorphic function is a restricted promise that the function will work for any type the caller chooses, as long as the chosen type is an instance of the required type class.
+
+when type class method is used, the compiler uses type inference to figure out which implementation of type class should be chosen, based on the inferred types of its arguments. It is something liking using overloaded method in a language like Java.
+
+An example:
+
+data Foo = F Int | G Char
+
+instance Eq Foo where
+    (F i1) == (F i2) = i1 == i2
+    (G c1) == (G c2) = c1 == c2
+    _      == _ = False
+
+    foo1 /= foo2 = not (foo1 == foo2)
+
+Type class can give default implementations of methods in therms other methods, which should be used whenever an instance does not override the default definition with its own. So we could imagie declaring Eq like this:
+
+class Eq a where
+    (==) :: a -> a -> Bool
+    (/=) :: a -> a -> Bool
+    x /= y = not (x == y)
+
+In face:
+class Eq a where
+    (==), (/=) :: a -> a -> Bool
+    x == y = not (x /= y)
+    x /= y = not (x == y)
+
+We can define either (==) or (/=), depends on which is more convenient!
+If we don't define either one, we get infinite recursion!
+
+We can just deriving:
+GHC can automatically generate instances of Eq for us!
+
+data Foo' = F' Int | G' Char
+    deriving (Eq, Ord, Show)  -- derive instances of the Eq, Ord, Show.
+
+Type Classes and Java Interfaces:
+Both define a set of types/classes which implement a specified list of operations.
+1. When Java class is defined, any interfaces it implements must be declared.
+Type class instances, are declared separately from the declaration of the corresponding types, and even be put in separate module.
+
+2. The types that can be specified for type class method are more general and flexible than signatures that can be given for Java interface methods. Especially when multi-parameter type classes enter the picture.
+
+Consider this:
+class Blerg a b where
+    blerg :: a -> b -> Bool
+
+Using blerg is equivalent to doing multiple dispatch: which implementation of blerg the compiler should choose depends on both the types a and b.
+
+and Haskell type class can also easily handle binary methods as in:
+class Num a where
+    (+) :: a -> a -> a
+
+but in Java:
+1. it is asymmetry. (one of two arguments would have to be the "privileged" one which is actually getting the method invoked on it!)
+
+2. Java's subtyping make an uncertain that the arguments of interface type is not guaranteed, they can be different, so we must invoke instanceof to solve this problem (runtime type-check).
+
+:t 5
+5 :: Num a => a
+literals like 5 can be used as Ints, Integers, Doubles, or any other type which is an instance of Num.
+
+making our own type class:
+class Listable a where
+    toList :: a -> [Int]
+
+toList :: Listable a => a -> [Int]
+
+instance Listable Int where
+    toList x = [x]
+
+instance Listable Bool where
+    toList True  = [1]
+    toList Flase = [0]
+
+-- We don't need to do any work to convert a list of Int to a list of Int.
+instance Listable [Int] where
+    toList = id
+
+data Tree a = Empty | Node a (Tree a) (Tree a)
+
+instance Listable (Tree Int) where
+    toList Empty        = []
+    toList (Node x l r) = toList l ++ [x] ++ toList r
+
+If we implement other functions in terms of toList, they also get a Listable constraint.
+
+sumL x = sum (toList x)
+
+sumL :: Listable a => a -> a
+
+foo x y = sum (toList x) == sum (toList y) || x < y
+
+The type of foo is: foo :: (Listable a, Ord a) => a -> a -> Bool
+
+instance (Listable a, Listable b) => Listable (a, b) where
+    toList (x, y) = toList x ++ toList y
+
+Notice how we can put type class constrains on an instance as well as on a function type. This says that a pair type (a, b) is an instance of Listable as long as a and b both are. Note that this definition is not recursive. The version of toList that we are defining is calling other versions of toList, not itself.
