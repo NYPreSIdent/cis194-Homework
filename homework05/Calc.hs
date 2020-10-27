@@ -45,4 +45,4 @@ instance Expr Mod7 where
     mul x y = (x * y) `mod` 7
 
 newtype MinMax = MinMax Integer deriving (Eq, Show)
-newtype Mod7   = Mod7 Integer deriving (Eq, Show)
+newtype Mod7    = Mod7 Integer deriving (Eq, Show)

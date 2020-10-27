@@ -1,0 +1,12 @@
+Monoids
+Type classes in Haskell are used to present an interface for types that have some behabior in common.
+We can think which behavior it supports when we make a type. i.e. If we see that our type is some kind of functor, we make it an instance of Functor.
+
+As we can see, the * and ++ along with [] share some common properties.
+1. The function takes two parameters.
+2. The parameters and the returned value have the same type.
+3. There exists such a value that doesn't change other values when uesd with the binary function.
+4. Change the priority of multiple expressions won't change the returned value.
+This is called associativity.
+
+A monoid is when you have an associative binary function and value which acts as an identity with respect to that function.
